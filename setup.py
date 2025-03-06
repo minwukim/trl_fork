@@ -118,13 +118,13 @@ setup(
     ],
     url="https://github.com/huggingface/trl",
     entry_points={
-        "console_scripts": ["trl=trl.cli:main"],
+        "console_scripts": ["trl_fork=trl_fork.cli:main"],
     },
     include_package_data=True,
     package_data={
-        "trl": ["templates/*.md"],
+        "trl_fork": ["templates/*.md"],
     },
-    packages=find_packages(exclude={"tests", "tests.slow", "trl.templates"}),
+    packages=find_packages(exclude={"tests", "tests.slow", "trl_fork.templates"}),
     install_requires=REQUIRED_PKGS,
     extras_require=EXTRAS,
     python_requires=">=3.9",

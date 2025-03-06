@@ -101,7 +101,7 @@ for reqs in EXTRAS.values():
 
 
 setup(
-    name="trl",
+    name="trl_fork",
     license="Apache 2.0",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

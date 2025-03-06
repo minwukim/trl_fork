@@ -101,7 +101,7 @@ for reqs in EXTRAS.values():
 
 
 setup(
-    name="trl_fork",
+    name="trl",
     license="Apache 2.0",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
@@ -118,13 +118,13 @@ setup(
     ],
     url="https://github.com/huggingface/trl",
     entry_points={
-        "console_scripts": ["trl_fork=trl_fork.cli:main"],
+        "console_scripts": ["trl=trl.cli:main"],
     },
     include_package_data=True,
     package_data={
-        "trl_fork": ["templates/*.md"],
+        "trl": ["templates/*.md"],
     },
-    packages=find_packages(exclude={"tests", "tests.slow", "trl_fork.templates"}),
+    packages=find_packages(exclude={"tests", "tests.slow", "trl.templates"}),
     install_requires=REQUIRED_PKGS,
     extras_require=EXTRAS,
     python_requires=">=3.9",

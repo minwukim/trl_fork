@@ -574,7 +574,7 @@ class GRPOTrainer(Trainer):
         if self._signature_columns is None:
             self._signature_columns = ["prompt"]
 
-    def _get_train_sampler(self) -> Sampler:
+    def _get_train_sampler(self, dataset: Optional[Dataset] = None) -> Sampler:
         # Returns a sampler that
         # 1. ensures each prompt is repeated across multiple processes. This guarantees that identical prompts are
         #    distributed to different GPUs, allowing rewards to be computed and normalized correctly within each prompt
@@ -602,13 +602,15 @@ class GRPOTrainer(Trainer):
         #                    2          7     16  16  16  17  17  17  18  18  18  19  19  19
         #                    2          8     20  20  20  21  21  21  22  22  22  23  23  23
         #                                          ...
+        if dataset is None:
+            dataset = self.train_dataset
         effective_batch_size = (
             self.args.per_device_train_batch_size
             * self.accelerator.num_processes
             * self.args.gradient_accumulation_steps
         )
         return RepeatRandomSampler(
-            data_source=self.train_dataset,
+            data_source=dataset,
             mini_repeat_count=self.num_generations,
             batch_size=effective_batch_size // self.num_generations,
             repeat_count=self.num_iterations,

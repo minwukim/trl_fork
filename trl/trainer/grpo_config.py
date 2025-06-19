@@ -97,6 +97,9 @@ class GRPOConfig(TrainingArguments):
             Number of iterations per batch (denoted as μ in the algorithm).
         epsilon (`float`, *optional*, defaults to `0.2`):
             Epsilon value for clipping.
+        epsilon_high (`float` or `None`, *optional*, defaults to `None`):
+            Upper-bound epsilon value for clipping. If not specified, it defaults to the same value as the lower-bound
+            specified in argument `epsilon`. Paper [DAPO](https://huggingface.co/papers/2503.14476) recommends `0.28`.
         reward_weights (`list[float]` or `None`, *optional*, defaults to `None`):
             Weights for each reward function. Must match the number of reward functions. If `None`, all rewards are
             weighted equally with weight `1.0`.
@@ -106,6 +109,23 @@ class GRPOConfig(TrainingArguments):
             applied. The [Dr. GRPO](https://github.com/sail-sg/understand-r1-zero/blob/main/understand-r1-zero.pdf)
             paper recommends not scaling the rewards, as scaling by the standard deviation introduces a question-level
             difficulty bias.
+                loss_type (`str`, *optional*, defaults to `"bnpo"`):
+            Specifies the loss formulation to use. Supported values are:
+
+            - `"grpo"`: Aggregates token-level losses by normalizing over sequence length. Not recommended due to
+                length bias—this approach tends to prefer shorter completions with positive advantages and longer ones
+                with negative advantages.
+            - `"bnpo"`: Aggregates token-level losses by normalizing number of active token in the local batch.
+                Note that normalization is performed over the local batch only, so results may slightly vary depending
+                on the local batch size, despite a constant effective batch size. When using
+                `per_device_train_batch_size==1`, the loss is equivalent to the GRPO loss.
+            - `"dr_grpo"`: Aggregates token-level losses by normalizing with a global constant. This method was
+                introduced in the [Dr. GRPO paper](https://huggingface.co/papers/2503.20783) to eliminate length bias.
+                The value of the constant corresponds to `max_completion_length`.
+        mask_truncated_completions (`bool`, *optional*, defaults to `False`):
+            When enabled, truncated completions are excluded from the loss calculation, preventing them from being
+            incorrectly penalized and introducing noise during training. According to the
+            [DAPO](https://huggingface.co/papers/2503.14476) paper, this is a good practice for training stability.
         sync_ref_model (`bool`, *optional*, defaults to `False`):
             Whether to synchronize the reference model with the active model every `ref_model_sync_steps` steps, using
             the `ref_model_mixup_alpha` parameter. This synchronization originites from the
@@ -119,6 +139,9 @@ class GRPOConfig(TrainingArguments):
             τ parameter from the [TR-DPO](https://huggingface.co/papers/2404.09656) paper, which determines how
             frequently the current policy is synchronized with the reference policy. To use this parameter, you must
             set `sync_ref_model=True`.
+        nsr_enabled ('bool', *optional*, defaults to `False`):
+            Whether to enable the Negative Sampling Reinforcement (NSR) training. If set to `True`, in the case where
+            there are only negative samples in n rollouts, the trainer will give negative samples a reward of -1, not 0. 
 
         > Parameters that control the logging
         log_completions (`bool`, *optional*, defaults to `False`):
@@ -252,6 +275,13 @@ class GRPOConfig(TrainingArguments):
         default=0.2,
         metadata={"help": "Epsilon value for clipping."},
     )
+    epsilon_high: Optional[float] = field(
+        default=None,
+        metadata={
+            "help": "Upper-bound epsilon value for clipping. If not specified, it defaults to the same value as the "
+            "lower-bound specified in argument `epsilon`. Paper DAPO recommends `0.28`."
+        },
+    )
     reward_weights: Optional[list[float]] = field(
         default=None,
         metadata={
@@ -266,6 +296,30 @@ class GRPOConfig(TrainingArguments):
             "the rewards are normalized by the standard deviation, ensuring they have unit variance. If `False`, no "
             "scaling is applied. The Dr. GRPO paper recommends not scaling the rewards, as scaling by the standard "
             "deviation introduces a question-level difficulty bias."
+        },
+    )
+    loss_type: str = field(
+        default="bnpo",
+        metadata={
+            "help": "Specifies the loss formulation to use. Supported values are `grpo`, `bnpo`, and `dr_grpo`. "
+            "`'grpo'`: Aggregates token-level losses by normalizing over sequence length. Not recommended due to "
+            "length bias—this approach tends to prefer shorter completions with positive advantages and longer ones "
+            "with negative advantages. "
+            "`'bnpo'`: Aggregates token-level losses by normalizing number of active token in the local batch. "
+            "Note that normalization is performed over the local batch only, so results may slightly vary depending "
+            "on the local batch size, despite a constant effective batch size. When using "
+            "`per_device_train_batch_size==1`, the loss is equivalent to the GRPO loss. "
+            "`'dr_grpo'`: Aggregates token-level losses by normalizing with a global constant. This method was "
+            "introduced in the Dr. GRPO paper to eliminate length bias. The value of the constant corresponds to "
+            "`max_completion_length`."
+        },
+    )
+    mask_truncated_completions: bool = field(
+        default=False,
+        metadata={
+            "help": "When enabled, truncated completions are excluded from the loss calculation, preventing them from "
+            "being incorrectly penalized and introducing noise during training. According to the DAPO paper, this is "
+            "a good practice for training stability."
         },
     )
     sync_ref_model: bool = field(
@@ -288,6 +342,14 @@ class GRPOConfig(TrainingArguments):
         metadata={
             "help": "τ parameter from the TR-DPO paper, which determines how frequently the current policy is "
             "synchronized with the reference policy. To use this parameter, you must set `sync_ref_model=True`."
+        },
+    )
+    nsr_enabled: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to enable the Negative Sampling Reinforcement (NSR) training. If set to `True`, in the "
+            "case where there are only negative samples in n rollouts, the trainer will give negative samples a "
+            "reward of -1, not 0."
         },
     )
 

@@ -870,7 +870,8 @@ class GRPOTrainer(Trainer):
         if self.scale_rewards:
             advantages = advantages / (std_grouped_rewards + 1e-4)
 
-        if self.nsr_enabled and (rewards < 0).all():
+        # if self.nsr_enabled and (rewards < 0).all():
+        if self.nsr_enabled:
             # If NSR is enabled and all rewards are negative, use rewards directly as advantages (no scaling)
             advantages = rewards
 
